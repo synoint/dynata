@@ -1,0 +1,24 @@
+{
+  "name": "syno/dynata",
+  "description": "PHP Dynata API",
+  "type": "library",
+  "require": {
+    "php": ">=7.4",
+    "guzzlehttp/guzzle": "^6.3"
+  },
+  "homepage": "https://github.com/synoint/dynata",
+  "license": "MIT",
+  "authors": [
+    {
+      "name":     "Syno International",
+      "homepage": "https://github.com/synoint"
+    }
+  ],
+  "autoload": {
+    "psr-4": { "Syno\\Dynata\\": "src/" }
+  },
+  "minimum-stability": "dev",
+  "require-dev": {
+    "symfony/framework-bundle": "^4.3@dev"
+  }
+}
