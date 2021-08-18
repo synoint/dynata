@@ -13,32 +13,34 @@ class Client
     /** @var string */
     private $apiDomain;
 
-    private string $accessToken;
+    /** @var string */
+    private $apiKey;
 
-    private HttpClient $client;
+    /** @var HttpClient */
+    private $client;
 
     /**
      * @param HttpClient    $client
      * @param string        $apiDomain
-     * @param string        $accessToken
+     * @param string        $apiKey
      */
     public function __construct(
         HttpClient  $client,
         string      $apiDomain = '',
-        string      $accessToken = ''
+        string      $apiKey = ''
     )
     {
         $this->apiDomain    = $apiDomain;
-        $this->accessToken  = $accessToken;
+        $this->apiKey       = $apiKey;
         $this->client       = $client;
     }
 
     /**
-     * @param string $accessToken
+     * @param string $apiKey
      */
-    public function setAccessToken(string $accessToken): Client
+    public function setApiKey(string $apiKey)
     {
-        $this->accessToken = $accessToken;
+        $this->apiKey = $apiKey;
 
         return $this;
     }
@@ -130,11 +132,12 @@ class Client
      */
     private function setParameters(string $requestType, ?array $parameters): array
     {
-        if($this->accessToken) {
-            $headerParameters = [
-                'headers' => ['Authorization' => 'Bearer ' . $this->accessToken]
-            ];
-        }
+        $headerParameters = [
+            'headers' =>
+                [
+                    'x-api-key' => $this->apiKey
+                ]
+        ];
 
         if (!empty($parameters)) {
             $parameters = array_merge($headerParameters, [($requestType == 'GET' ? 'query' : 'json') => $parameters]);
