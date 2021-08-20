@@ -4,115 +4,87 @@ namespace Syno\Dynata\Demand;
 
 use Psr\Http\Message\ResponseInterface;
 use Syno\Dynata\HttpClient;
+use Syno\Dynata\Demand\Authentication\Resources\Auth;
 use GuzzleHttp\Exception\RequestException;
 
 class Client
 {
-    const CLIENT_ID = 'api';
+    public string $accessToken;
 
-    /** @var string */
-    private $apiDomain;
+    private HttpClient $client;
+    private Auth       $auth;
+    private string     $apiUrl;
 
-    /** @var string */
-    private $apiKey;
-
-    /** @var HttpClient */
-    private $client;
-
-    /**
-     * @param HttpClient    $client
-     * @param string        $apiDomain
-     * @param string        $apiKey
-     */
     public function __construct(
-        HttpClient  $client,
-        string      $apiDomain = '',
-        string      $apiKey = ''
+        Auth    $auth,
+        string  $apiUrl
     )
     {
-        $this->apiDomain    = $apiDomain;
-        $this->apiKey       = $apiKey;
-        $this->client       = $client;
+        $this->apiUrl  = $apiUrl;
+        $this->auth    = $auth;
+        $this->client  = new HttpClient();
     }
 
-    /**
-     * @param string $apiKey
-     */
-    public function setApiKey(string $apiKey)
+    public function authenticate(string $username, string $password): Client
     {
-        $this->apiKey = $apiKey;
+        $this->accessToken = $this->auth->obtainAccessToken($username, $password);
 
         return $this;
     }
 
-    /**
-     * @param string $uri
-     * @param array $parameters
-     *
-     * @return array
-     */
+    public function getAll(string $url): array
+    {
+        $data   = [];
+
+        while($url) {
+
+            $response = $this->get($url);
+
+            $url = null;
+
+            if(isset($response['data'])){
+                $data = array_merge($data, $response['data']);
+
+                if(isset($response['meta']['links']['next'])){
+                    $url = str_replace($this->apiUrl, '', $response['meta']['links']['next']);
+                }
+            }
+        }
+
+        return $data;
+    }
+
     public function get(string $uri, array $parameters = null): array
     {
         return $this->request('GET', $uri, $parameters);
     }
 
-    /**
-     * @param string $uri
-     * @param array $parameters
-     *
-     * @return array
-     */
     public function post(string $uri, array $parameters = null): array
     {
         return $this->request('POST', $uri, $parameters);
     }
 
-    /**
-     * @param string $uri
-     * @param array $parameters
-     *
-     * @return array
-     */
     public function patch(string $uri, array $parameters = null): array
     {
         return $this->request('PATCH', $uri, $parameters);
     }
 
-    /**
-     * @param string $uri
-     * @param array $parameters
-     *
-     * @return array
-     */
     public function put(string $uri, array $parameters = null): array
     {
         return $this->request('PUT', $uri, $parameters);
     }
 
-    /**
-     * @param string $uri
-     * @param array $parameters
-     *
-     * @return array
-     */
     public function delete(string $uri, array $parameters = null): array
     {
         return $this->request('DELETE', $uri, $parameters);
     }
 
-    /**
-     * @param string $requestType
-     * @param string $url
-     * @param array $parameters
-     *
-     * @return array
-     */
     private function request(string $requestType, string $url, ?array $parameters): array
     {
         try {
             $response = $this->client->request(
                 $requestType,
-                $this->apiDomain . $url, $this->setParameters($requestType, $parameters)
+                $this->apiUrl . $url, $this->setParameters($requestType, $parameters)
             );
 
             $result = $this->getSuccessResponse($response);
@@ -124,19 +96,10 @@ class Client
         return $result;
     }
 
-    /**
-     * @param string $requestType
-     * @param string $parameters
-     *
-     * @return array
-     */
     private function setParameters(string $requestType, ?array $parameters): array
     {
         $headerParameters = [
-            'headers' =>
-                [
-                    'x-api-key' => $this->apiKey
-                ]
+            'headers' => ['Authorization' => 'Bearer '.$this->accessToken]
         ];
 
         if (!empty($parameters)) {
@@ -148,22 +111,12 @@ class Client
         return $parameters;
     }
 
-    /**
-     * @param ResponseInterface $response
-     *
-     * @return array
-     */
     private function getSuccessResponse(ResponseInterface $response): array
     {
         $result = json_decode($response->getBody()->getContents(), true);
         return $result !== null ? $result : [];
     }
 
-    /**
-     * @param ResponseInterface $response
-     *
-     * @return array
-     */
     private function getErrorResponse(ResponseInterface $response): array
     {
         $result = json_decode($response->getBody()->getContents(), true);
