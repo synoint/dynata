@@ -18,6 +18,6 @@ class Attribute
 
     public function get(string $countryCode, string $languageCode): array
     {
-        return $this->client->get(sprintf('/attributes/%s/%s', $countryCode, $languageCode));
+        return $this->client->getAll(sprintf('/attributes/%s/%s', $countryCode, $languageCode));
     }
 }
